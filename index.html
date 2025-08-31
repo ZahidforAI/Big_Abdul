@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Big Abdul vs Bill Monday - Monad Runner</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #2D1B69, #6B46C1, #8B5CF6);
+            font-family: 'Courier New', monospace;
+            overflow: hidden;
+            color: white;
+        }
+
+        #gameContainer {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        #ground {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 100px;
+            background: linear-gradient(to bottom, #4C1D95, #3730A3);
+            border-top: 3px solid #A855F7;
+        }
+
+        #bigAbdul {
+            position: absolute;
+            bottom: 100px;
+            left: 100px;
+            width: 60px;
+            height: 60px;
+            background-image: url('abdul.png');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            border: 3px solid #DDD6FE;
+            border-radius: 10px;
+            transition: bottom 0.3s ease;
+            z-index: 10;
+        }
+
+        #bigAbdul.jumping {
+            bottom: 250px;
+        }
+
+        .billMonday {
+            position: absolute;
+            bottom: 100px;
+            width: 60px;
+            height: 60px;
+            background-image: url('biily.jpg');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            border: 2px solid #FCA5A5;
+            border-radius: 5px;
+            animation: moveLeft 2s linear infinite;
+        }
+
+        @keyframes moveLeft {
+            from {
+                right: -60px;
+            }
+            to {
+                right: 100vw;
+            }
+        }
+
+        #score {
+            position: absolute;
+            top: 30px;
+            left: 30px;
+            font-size: 20px;
+            font-weight: bold;
+            color: #DDD6FE;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+
+        #gameTitle {
+            position: absolute;
+            top: 30px;
+            right: 30px;
+            font-size: 24px;
+            font-weight: bold;
+            color: #A855F7;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.7);
+        }
+
+        #gameOver {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            background: rgba(45, 27, 105, 0.95);
+            padding: 40px;
+            border-radius: 20px;
+            border: 3px solid #A855F7;
+            display: none;
+            z-index: 100;
+        }
+
+        #gameOver h2 {
+            color: #DC2626;
+            font-size: 28px;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.7);
+        }
+
+        #gameOver p {
+            color: #DDD6FE;
+            font-size: 18px;
+            margin-bottom: 20px;
+        }
+
+        #restartBtn {
+            background: #A855F7;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 18px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        #restartBtn:hover {
+            background: #8B5CF6;
+            transform: scale(1.05);
+        }
+
+        #instructions {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            color: #DDD6FE;
+            font-size: 16px;
+            opacity: 0.8;
+        }
+
+        .cloud {
+            position: absolute;
+            background: rgba(221, 214, 254, 0.3);
+            border-radius: 50px;
+            animation: moveClouds 8s linear infinite;
+        }
+
+        .cloud:nth-child(odd) {
+            top: 20%;
+            animation-duration: 12s;
+        }
+
+        .cloud:nth-child(even) {
+            top: 10%;
+            animation-duration: 15s;
+        }
+
+        @keyframes moveClouds {
+            from {
+                right: -200px;
+            }
+            to {
+                right: 100vw;
+            }
+        }
+
+        .blockchain-particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: #A855F7;
+            border-radius: 50%;
+            animation: floatParticles 6s linear infinite;
+            opacity: 0.7;
+        }
+
+        @keyframes floatParticles {
+            from {
+                right: -10px;
+                transform: translateY(0px);
+            }
+            to {
+                right: 100vw;
+                transform: translateY(-20px);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <div id="gameTitle">MONAD RUNNER</div>
+        <div id="score">Monad Testnet TX: 0</div>
+        
+        <div id="bigAbdul"></div>
+        
+        <div id="ground"></div>
+        
+        <div id="gameOver">
+            <h2>🚨 BIG ABDUL SYBIL DETECTED! 🚨</h2>
+            <p>Bill Monday caught you!</p>
+            <p id="finalScore">Final Score: Monad Testnet TX: 0</p>
+            <button id="restartBtn">Try Again</button>
+        </div>
+        
+        <div id="instructions">
+            Press SPACEBAR or click to jump! Avoid Bill Monday to earn Testnet TXs!
+        </div>
+    </div>
+
+    <script>
+        const bigAbdul = document.getElementById('bigAbdul');
+        const gameContainer = document.getElementById('gameContainer');
+        const scoreElement = document.getElementById('score');
+        const gameOverScreen = document.getElementById('gameOver');
+        const finalScoreElement = document.getElementById('finalScore');
+        const restartBtn = document.getElementById('restartBtn');
+
+        let score = 0;
+        let isJumping = false;
+        let gameRunning = true;
+        let gameSpeed = 1800;
+        let spawnRate = 1200;
+
+        // Game state
+        let billMondayInterval;
+        let scoreInterval;
+        let cloudInterval;
+        let particleInterval;
+
+        function jump() {
+            if (!isJumping && gameRunning) {
+                isJumping = true;
+                bigAbdul.classList.add('jumping');
+                
+                setTimeout(() => {
+                    bigAbdul.classList.remove('jumping');
+                    isJumping = false;
+                }, 300);
+            }
+        }
+
+        function spawnBillMonday() {
+            if (!gameRunning) return;
+            
+            const billMonday = document.createElement('div');
+            billMonday.className = 'billMonday';
+            billMonday.style.animationDuration = `${gameSpeed}ms`;
+            
+            // Randomly spawn Bill Monday at different heights
+            const spawnPositions = [100, 150, 200, 250]; // ground, low-mid, mid, high
+            const randomPosition = spawnPositions[Math.floor(Math.random() * spawnPositions.length)];
+            billMonday.style.bottom = randomPosition + 'px';
+            
+            gameContainer.appendChild(billMonday);
+
+            // Remove Bill Monday after animation
+            setTimeout(() => {
+                if (billMonday.parentNode) {
+                    billMonday.parentNode.removeChild(billMonday);
+                }
+            }, gameSpeed + 100);
+        }
+
+        function spawnCloud() {
+            if (!gameRunning) return;
+            
+            const cloud = document.createElement('div');
+            cloud.className = 'cloud';
+            cloud.style.width = Math.random() * 100 + 50 + 'px';
+            cloud.style.height = Math.random() * 30 + 20 + 'px';
+            cloud.style.top = Math.random() * 30 + 10 + '%';
+            gameContainer.appendChild(cloud);
+
+            setTimeout(() => {
+                if (cloud.parentNode) {
+                    cloud.parentNode.removeChild(cloud);
+                }
+            }, 15000);
+        }
+
+        function spawnParticle() {
+            if (!gameRunning) return;
+            
+            const particle = document.createElement('div');
+            particle.className = 'blockchain-particle';
+            particle.style.top = Math.random() * 70 + 20 + '%';
+            gameContainer.appendChild(particle);
+
+            setTimeout(() => {
+                if (particle.parentNode) {
+                    particle.parentNode.removeChild(particle);
+                }
+            }, 6000);
+        }
+
+        function checkCollisions() {
+            const billMondayElements = document.querySelectorAll('.billMonday');
+            const abdulRect = bigAbdul.getBoundingClientRect();
+
+            billMondayElements.forEach(billMonday => {
+                const billRect = billMonday.getBoundingClientRect();
+                
+                if (abdulRect.left < billRect.right &&
+                    abdulRect.right > billRect.left &&
+                    abdulRect.bottom > billRect.top &&
+                    abdulRect.top < billRect.bottom) {
+                    gameOver();
+                }
+            });
+        }
+
+        function updateScore() {
+            if (gameRunning) {
+                score++;
+                scoreElement.textContent = `Monad Testnet TX: ${score}`;
+                
+                // Increase difficulty faster and more aggressively
+                if (score % 5 === 0) { // Every 5 seconds instead of 10
+                    gameSpeed = Math.max(800, gameSpeed - 120); // Faster reduction
+                    spawnRate = Math.max(600, spawnRate - 80); // More frequent spawning
+                    
+                    clearInterval(billMondayInterval);
+                    billMondayInterval = setInterval(spawnBillMonday, spawnRate);
+                }
+            }
+        }
+
+        function gameOver() {
+            gameRunning = false;
+            finalScoreElement.textContent = `Final Score: Monad Testnet TX: ${score}`;
+            gameOverScreen.style.display = 'block';
+            
+            // Clear all intervals
+            clearInterval(billMondayInterval);
+            clearInterval(scoreInterval);
+            clearInterval(cloudInterval);
+            clearInterval(particleInterval);
+            
+            // Remove all Bill Monday elements
+            document.querySelectorAll('.billMonday').forEach(el => el.remove());
+        }
+
+        function restartGame() {
+            gameRunning = true;
+            score = 0;
+            gameSpeed = 1800;
+            spawnRate = 1200;
+            isJumping = false;
+            
+            scoreElement.textContent = 'Monad Testnet TX: 0';
+            gameOverScreen.style.display = 'none';
+            bigAbdul.classList.remove('jumping');
+            
+            // Remove all existing elements
+            document.querySelectorAll('.billMonday, .cloud, .blockchain-particle').forEach(el => el.remove());
+            
+            startGame();
+        }
+
+        function startGame() {
+            // Spawn Bill Monday
+            billMondayInterval = setInterval(spawnBillMonday, spawnRate);
+            
+            // Update score
+            scoreInterval = setInterval(updateScore, 1000);
+            
+            // Spawn clouds
+            cloudInterval = setInterval(spawnCloud, 3000);
+            
+            // Spawn particles
+            particleInterval = setInterval(spawnParticle, 500);
+            
+            // Check collisions
+            const collisionChecker = setInterval(() => {
+                if (gameRunning) {
+                    checkCollisions();
+                } else {
+                    clearInterval(collisionChecker);
+                }
+            }, 50);
+        }
+
+        // Event listeners
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') {
+                e.preventDefault();
+                jump();
+            }
+        });
+
+        document.addEventListener('click', jump);
+
+        restartBtn.addEventListener('click', restartGame);
+
+        // Start the game
+        startGame();
+
+        // Initial cloud and particle spawn
+        setTimeout(spawnCloud, 1000);
+        setTimeout(spawnParticle, 500);
+    </script>
+</body>
+</html>
